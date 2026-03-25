@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가위바위보 게임</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: #f5f5f5;
+    transition: 0.3s;
+  }
+  body.dark {
+    background: #1e1e1e;
+    color: #fff;
+  }
+  .top-bar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
+  button {
+    padding: 10px 15px;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .choice-btn { background: #4CAF50; color: white; }
+  .dark-btn { background: #333; color: white; }
+  .stats-btn { background: #2196F3; color: white; }
+
+  #result { font-size: 24px; margin: 20px; }
+
+  .scoreboard {
+    margin: 10px;
+    font-size: 18px;
+  }
+
+  #statsTable {
+    margin: 20px auto;
+    border-collapse: collapse;
+    display: none;
+  }
+  #statsTable td, #statsTable th {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+
+  canvas {
+    max-width: 500px;
+    margin: 20px auto;
+    display: block;
+  }
+
+  .confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: red;
+    animation: fall 2s linear infinite;
+  }
+
+  @keyframes fall {
+    to { transform: translateY(100vh) rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="dark-btn" onclick="toggleDark()">다크 모드</button>
+  <button class="stats-btn" onclick="toggleStats()">승률 보기</button>
+</div>
+
+<h1>가위 ✌️ 바위 ✊ 보 ✋</h1>
+
+<div>
+  <button class="choice-btn" onclick="play('가위')">가위</button>
+  <button class="choice-btn" onclick="play('바위')">바위</button>
+  <button class="choice-btn" onclick="play('보')">보</button>
+</div>
+
+<div id="result"></div>
+
+<div class="scoreboard">
+  승: <span id="win">0</span> |
+  패: <span id="lose">0</span> |
+  무: <span id="draw">0</span>
+</div>
+
+<table id="statsTable">
+  <tr><th>승</th><th>패</th><th>무</th></tr>
+  <tr><td id="tWin">0</td><td id="tLose">0</td><td id="tDraw">0</td></tr>
+</table>
+
+<canvas id="chart"></canvas>
+
+<script>
+let win=0, lose=0, draw=0;
+let history = [];
+let gameOver = false;
+
+const ctx = document.getElementById('chart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: '승률(%)',
+      data: []
+    }]
+  }
+});
+
+function play(user) {
+  if(gameOver) return;
+
+  const choices = ['가위','바위','보'];
+  const comp = choices[Math.floor(Math.random()*3)];
+
+  let resultText = `컴퓨터: ${comp} | `;
+
+  if(user === comp) {
+    draw++;
+    resultText += '무승부';
+  } else if(
+    (user==='가위'&&comp==='보')||
+    (user==='바위'&&comp==='가위')||
+    (user==='보'&&comp==='바위')
+  ){
+    win++;
+    resultText += '승리!';
+  } else {
+    lose++;
+    resultText += '패배';
+  }
+
+  document.getElementById('result').innerText = resultText;
+  updateScore();
+  updateChart();
+
+  if(win===3 || lose===3) endGame();
+}
+
+function updateScore(){
+  document.getElementById('win').innerText = win;
+  document.getElementById('lose').innerText = lose;
+  document.getElementById('draw').innerText = draw;
+
+  document.getElementById('tWin').innerText = win;
+  document.getElementById('tLose').innerText = lose;
+  document.getElementById('tDraw').innerText = draw;
+}
+
+function updateChart(){
+  let total = win+lose+draw;
+  let rate = total ? (win/total*100).toFixed(1) : 0;
+
+  history.push(rate);
+  chart.data.labels.push(history.length);
+  chart.data.datasets[0].data.push(rate);
+  chart.update();
+}
+
+function endGame(){
+  gameOver = true;
+
+  if(win===3){
+    celebrate();
+    setTimeout(()=>alert('🎉 축하합니다! 승리!'), 200);
+  } else {
+    alert('😢 아쉽네요... 다음엔 이길 수 있어요!');
+  }
+
+  setTimeout(resetGame, 500);
+}
+
+function resetGame(){
+  win=lose=draw=0;
+  gameOver=false;
+  history=[];
+
+  chart.data.labels=[];
+  chart.data.datasets[0].data=[];
+  chart.update();
+
+  updateScore();
+  document.getElementById('result').innerText = '';
+}
+
+function toggleDark(){
+  document.body.classList.toggle('dark');
+}
+
+function toggleStats(){
+  const table = document.getElementById('statsTable');
+  table.style.display = table.style.display==='none' ? 'table' : 'none';
+}
+
+function celebrate(){
+  for(let i=0;i<50;i++){
+    const div = document.createElement('div');
+    div.className='confetti';
+    div.style.left = Math.random()*100+'vw';
+    div.style.background = `hsl(${Math.random()*360},100%,50%)`;
+    div.style.animationDuration = (Math.random()*2+1)+'s';
+    document.body.appendChild(div);
+
+    setTimeout(()=>div.remove(),2000);
+  }
+}
+</script>
+
+</body>
+</html>
